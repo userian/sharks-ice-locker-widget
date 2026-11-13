@@ -7,7 +7,43 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+  actions: read
+
 jobs:
+  publish-release-now:
+    name: Publish v1.0.0 Release Assets
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download built APK & IPA and publish v1.0.0 Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p /tmp/release-assets
+          if gh run download 43369827705 -R "${{ github.repository }}" --dir /tmp/release-assets; then
+            cp /tmp/release-assets/sharks-ice-locker-widget-apk/app-release.apk /tmp/release-assets/sharks-ice-locker-widget.apk
+            cp /tmp/release-assets/sharks-ice-locker-widget-ios-ipa/sharks-ice-locker-widget.ipa /tmp/release-assets/sharks-ice-locker-widget.ipa
+            if ! gh release view v1.0.0 -R "${{ github.repository }}" >/dev/null 2>&1; then
+              gh release create v1.0.0 \
+                /tmp/release-assets/sharks-ice-locker-widget.apk \
+                /tmp/release-assets/sharks-ice-locker-widget.ipa \
+                -R "${{ github.repository }}" \
+                --title "v1.0.0 — Sharks Ice Locker Room Widget (Android APK & iOS IPA)" \
+                --notes "### Direct Mobile Downloads
+          - **Android (1-Tap APK Install):** [sharks-ice-locker-widget.apk](https://github.com/${{ github.repository }}/releases/download/v1.0.0/sharks-ice-locker-widget.apk)
+          - **iOS (Unsigned IPA for Sideloadly / AltStore):** [sharks-ice-locker-widget.ipa](https://github.com/${{ github.repository }}/releases/download/v1.0.0/sharks-ice-locker-widget.ipa)"
+            else
+              gh release upload v1.0.0 \
+                /tmp/release-assets/sharks-ice-locker-widget.apk \
+                /tmp/release-assets/sharks-ice-locker-widget.ipa \
+                -R "${{ github.repository }}" --clobber
+            fi
+          fi
+
   build-android:
     name: Build Android Release APK
     runs-on: ubuntu-latest
@@ -44,13 +80,24 @@ jobs:
           flutter test
 
       - name: Build Android Release APK
-        run: flutter build apk --release
+        run: |
+          flutter build apk --release
+          cp build/app/outputs/flutter-apk/app-release.apk sharks-ice-locker-widget.apk
 
       - name: Upload Android APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: sharks-ice-locker-widget-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: sharks-ice-locker-widget.apk
+
+      - name: Attach APK to v1.0.0 GitHub Release
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh release view v1.0.0 -R "${{ github.repository }}" >/dev/null 2>&1; then
+            gh release upload v1.0.0 sharks-ice-locker-widget.apk -R "${{ github.repository }}" --clobber
+          fi
 
   build-ios:
     name: Build iOS App (Unsigned IPA)
@@ -93,3 +140,12 @@ jobs:
         with:
           name: sharks-ice-locker-widget-ios-ipa
           path: sharks-ice-locker-widget.ipa
+
+      - name: Attach IPA to v1.0.0 GitHub Release
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh release view v1.0.0 -R "${{ github.repository }}" >/dev/null 2>&1; then
+            gh release upload v1.0.0 sharks-ice-locker-widget.ipa -R "${{ github.repository }}" --clobber
+          fi
