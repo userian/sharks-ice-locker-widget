@@ -1,0 +1,95 @@
+name: Build Android APK & iOS App
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    name: Build Android Release APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Generate missing platform scaffolding & restore custom files
+        run: |
+          mkdir -p /tmp/backup
+          cp -r lib test android pubspec.yaml /tmp/backup/
+          flutter create . --org com.sharksice --project-name sharks_ice_locker_widget
+          cp /tmp/backup/pubspec.yaml pubspec.yaml
+          cp -r /tmp/backup/lib/* lib/
+          cp -r /tmp/backup/test/* test/
+          rm -f test/widget_test.dart
+          cp -r /tmp/backup/android/app/src/main/* android/app/src/main/
+
+      - name: Install dependencies & run unit tests
+        run: |
+          flutter pub get
+          flutter test
+
+      - name: Build Android Release APK
+        run: flutter build apk --release
+
+      - name: Upload Android APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sharks-ice-locker-widget-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+
+  build-ios:
+    name: Build iOS App (Unsigned IPA)
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Generate missing platform scaffolding & restore custom files
+        run: |
+          mkdir -p /tmp/backup
+          cp -r lib test ios pubspec.yaml /tmp/backup/
+          flutter create . --org com.sharksice --project-name sharks_ice_locker_widget
+          cp /tmp/backup/pubspec.yaml pubspec.yaml
+          cp -r /tmp/backup/lib/* lib/
+          cp -r /tmp/backup/test/* test/
+          rm -f test/widget_test.dart
+          cp -r /tmp/backup/ios/* ios/
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build iOS Release (No Codesign)
+        run: flutter build ios --release --no-codesign
+
+      - name: Package Unsigned IPA
+        run: |
+          mkdir -p Payload
+          cp -r build/ios/iphoneos/Runner.app Payload/
+          zip -r sharks-ice-locker-widget.ipa Payload
+
+      - name: Upload iOS IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sharks-ice-locker-widget-ios-ipa
+          path: sharks-ice-locker-widget.ipa

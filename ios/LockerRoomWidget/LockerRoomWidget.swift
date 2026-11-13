@@ -1,0 +1,196 @@
+import WidgetKit
+import SwiftUI
+
+private let appGroupId = "group.com.sharksice.lockerwidget"
+
+struct WidgetGameItem: Codable, Hashable {
+    let myTeam: String
+    let isHome: Bool
+    let myLockerRoom: String
+    let startTime: String
+
+    var jerseyLabel: String {
+        isHome ? "White" : "Dark"
+    }
+}
+
+struct LockerRoomEntry: TimelineEntry {
+    let date: Date
+    let games: [WidgetGameItem]
+}
+
+struct LockerRoomProvider: TimelineProvider {
+    func placeholder(in context: Context) -> LockerRoomEntry {
+        LockerRoomEntry(
+            date: Date(),
+            games: [
+                WidgetGameItem(
+                    myTeam: "Choking Hazards",
+                    isHome: true,
+                    myLockerRoom: "W4",
+                    startTime: "7:45 PM"
+                )
+            ]
+        )
+    }
+
+    func getSnapshot(in context: Context, completion: @escaping (LockerRoomEntry) -> Void) {
+        completion(loadEntryFromSharedDefaults())
+    }
+
+    func getTimeline(in context: Context, completion: @escaping (Timeline<LockerRoomEntry>) -> Void) {
+        let entry = loadEntryFromSharedDefaults()
+        let nextRefresh = Calendar.current.date(byAdding: .minute, value: 30, to: Date()) ?? Date()
+        completion(Timeline(entries: [entry], policy: .after(nextRefresh)))
+    }
+
+    private func loadEntryFromSharedDefaults() -> LockerRoomEntry {
+        let sharedDefaults = UserDefaults(suiteName: appGroupId)
+        let rawJson = sharedDefaults?.string(forKey: "user_games_json") ?? "[]"
+
+        var decodedGames: [WidgetGameItem] = []
+        if let data = rawJson.data(using: .utf8),
+           let parsed = try? JSONDecoder().decode([WidgetGameItem].self, from: data) {
+            decodedGames = parsed
+        }
+
+        return LockerRoomEntry(date: Date(), games: decodedGames)
+    }
+}
+
+struct LockerRoomWidgetEntryView: View {
+    var entry: LockerRoomProvider.Entry
+    @Environment(\.widgetFamily) var family
+
+    var body: some View {
+        ZStack {
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    Color(red: 0.0, green: 0.18, blue: 0.21),
+                    Color(red: 0.0, green: 0.43, blue: 0.47)
+                ]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+
+            if entry.games.isEmpty {
+                Text("No Games Today")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundColor(.white)
+                    .padding(14)
+            } else if family == .systemSmall {
+                smallGameView(game: entry.games[0])
+            } else {
+                mediumGamesView(games: entry.games)
+            }
+        }
+    }
+
+    /// Little jersey icon + "White" or "Dark" badge
+    private func jerseyBadge(isWhite: Bool) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: "tshirt.fill")
+                .font(.system(size: 11, weight: .bold))
+                .foregroundColor(isWhite ? Color(red: 0.06, green: 0.09, blue: 0.16) : .white)
+            Text(isWhite ? "White" : "Dark")
+                .font(.system(size: 11, weight: .heavy))
+                .foregroundColor(isWhite ? Color(red: 0.06, green: 0.09, blue: 0.16) : .white)
+        }
+        .padding(.horizontal, 7)
+        .padding(.vertical, 4)
+        .background(isWhite ? Color.white : Color(red: 0.12, green: 0.16, blue: 0.23))
+        .cornerRadius(7)
+    }
+
+    private func smallGameView(game: WidgetGameItem) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .center, spacing: 8) {
+                // 1. Locker Room (e.g. W4, O2, B1)
+                VStack(spacing: 0) {
+                    Text("LR")
+                        .font(.system(size: 9, weight: .black))
+                        .foregroundColor(Color(red: 0.0, green: 0.18, blue: 0.21))
+                    Text(game.myLockerRoom)
+                        .font(.system(size: 18, weight: .black))
+                        .minimumScaleFactor(0.7)
+                        .lineLimit(1)
+                        .foregroundColor(Color(red: 0.0, green: 0.18, blue: 0.21))
+                }
+                .frame(width: 50, height: 44)
+                .background(Color(red: 1.0, green: 0.72, blue: 0.01))
+                .cornerRadius(10)
+
+                Spacer()
+
+                // 2. Jersey with icon
+                jerseyBadge(isWhite: game.isHome)
+            }
+
+            // 3. Time
+            Text(game.startTime)
+                .font(.system(size: 13, weight: .heavy))
+                .foregroundColor(Color(red: 1.0, green: 0.72, blue: 0.01))
+
+            // 4. Team Name
+            Text(game.myTeam)
+                .font(.system(size: 14, weight: .bold))
+                .foregroundColor(.white)
+                .lineLimit(1)
+        }
+        .padding(12)
+    }
+
+    private func mediumGamesView(games: [WidgetGameItem]) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ForEach(Array(games.prefix(2)), id: \.self) { game in
+                HStack(spacing: 12) {
+                    // 1. Locker Room (e.g. W4, O2, B1)
+                    VStack(spacing: 0) {
+                        Text("LR")
+                            .font(.system(size: 9, weight: .black))
+                            .foregroundColor(Color(red: 0.0, green: 0.18, blue: 0.21))
+                        Text(game.myLockerRoom)
+                            .font(.system(size: 18, weight: .black))
+                            .minimumScaleFactor(0.7)
+                            .lineLimit(1)
+                            .foregroundColor(Color(red: 0.0, green: 0.18, blue: 0.21))
+                    }
+                    .frame(width: 52, height: 44)
+                    .background(Color(red: 1.0, green: 0.72, blue: 0.01))
+                    .cornerRadius(10)
+
+                    // 2. Time + 3. Team Name
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(game.startTime)
+                            .font(.system(size: 12, weight: .heavy))
+                            .foregroundColor(Color(red: 1.0, green: 0.72, blue: 0.01))
+                        Text(game.myTeam)
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundColor(.white)
+                            .lineLimit(1)
+                    }
+
+                    Spacer()
+
+                    // 4. Jersey with icon
+                    jerseyBadge(isWhite: game.isHome)
+                }
+            }
+        }
+        .padding(14)
+    }
+}
+
+@main
+struct LockerRoomWidget: Widget {
+    let kind: String = "LockerRoomWidget"
+
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: kind, provider: LockerRoomProvider()) { entry in
+            LockerRoomWidgetEntryView(entry: entry)
+        }
+        .configurationDisplayName("Sharks Ice Locker Room")
+        .description("Shows your game time, team name, locker room, and jersey color.")
+        .supportedFamilies([.systemSmall, .systemMedium])
+    }
+}
