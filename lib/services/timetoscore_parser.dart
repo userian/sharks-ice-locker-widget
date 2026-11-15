@@ -148,17 +148,23 @@ class TimeToScoreParser {
       if (game.homeTeam.isNotEmpty) teamNames.add(game.homeTeam);
     }
 
-    // 2. Also scrape team links from display-stats.php for each selected facility
-    for (final facility in facilities) {
+    // 2. Scrape all division team links from display-stats.php for each selected facility
+    final statsUrls = <String>{
+      for (final facility in facilities) ...facility.statsUrls,
+    };
+    for (final url in statsUrls) {
       try {
         final response = await _client
             .get(
-              Uri.parse(facility.statsUrl),
-              headers: const {'User-Agent': 'SharksIceLockerWidget/1.0'},
+              Uri.parse(url),
+              headers: const {
+                'Accept': 'text/html,application/xhtml+xml',
+                'User-Agent': 'WhichLockerRoom/1.0',
+              },
             )
-            .timeout(const Duration(seconds: 12));
+            .timeout(const Duration(seconds: 15));
 
-        if (response.statusCode == 200) {
+        if (response.statusCode == 200 && response.body.isNotEmpty) {
           teamNames.addAll(parseTeamsFromStatsHtml(response.body));
         }
       } catch (_) {
@@ -171,15 +177,35 @@ class TimeToScoreParser {
     return sorted;
   }
 
-  /// Parses team names from `display-stats.php` (anchors linking to `display-schedule.php?team=`).
+  /// Parses all league team names from `display-stats.php` standings pages.
+  /// Handles `display-schedule?team=...`, `display-schedule.php?team=...`, and standings table rows.
   List<String> parseTeamsFromStatsHtml(String htmlContent) {
     final document = html_parser.parse(htmlContent);
     final teams = <String>{};
 
-    for (final anchor in document.querySelectorAll('a[href*="display-schedule.php"]')) {
+    // 1. Anchors linking to team schedules (e.g. href="display-schedule?team=3885&season=...")
+    for (final anchor in document.querySelectorAll(
+      'a[href*="display-schedule"], a[href*="team="]',
+    )) {
       final name = _cleanText(anchor.text);
       if (name.isNotEmpty && !_isGenericHeader(name)) {
         teams.add(name);
+      }
+    }
+
+    // 2. Fallback: parse standings rows [Team, GP, W, L, T, OTL, PTS, ...]
+    for (final row in document.querySelectorAll('tr')) {
+      final cells = row.querySelectorAll('td');
+      if (cells.length >= 7) {
+        final teamCandidate = _cleanText(cells[0].text);
+        final gpText = _cleanText(cells[1].text);
+        final wText = _cleanText(cells[2].text);
+        if (teamCandidate.isNotEmpty &&
+            !_isGenericHeader(teamCandidate) &&
+            int.tryParse(gpText) != null &&
+            int.tryParse(wText) != null) {
+          teams.add(teamCandidate);
+        }
       }
     }
 
@@ -246,6 +272,7 @@ class TimeToScoreParser {
     final hasTeamCols = lowerCells.any(
       (c) =>
           c.contains('away') ||
+          c.contains('aray') ||
           c.contains('visitor') ||
           c.contains('home') ||
           c.contains('team'),
@@ -281,6 +308,7 @@ class TimeToScoreParser {
         divisionCol = i;
       } else if (awayTeamCol == null &&
           (col == 'away' ||
+              col == 'aray' ||
               col == 'visitor' ||
               col == 'visiting team' ||
               col == 'away team')) {
@@ -292,7 +320,7 @@ class TimeToScoreParser {
           col.contains('locker') ||
           col.contains('room') ||
           col.contains('dress')) {
-        if (col.contains('away') || col.contains('vis')) {
+        if (col.contains('away') || col.contains('aray') || col.contains('vis')) {
           awayLrCol = i;
         } else if (col.contains('home')) {
           homeLrCol = i;
@@ -414,7 +442,8 @@ class TimeToScoreParser {
     final lower = value.toLowerCase();
     return const {
       'away',
-      'Away Team',
+      'aray',
+      'away team',
       'visitor',
       'home',
       'home team',
@@ -423,6 +452,10 @@ class TimeToScoreParser {
       'rink',
       'lr',
       'locker room',
+      'division player stats',
+      'schedule',
+      'standings',
+      'stats',
     }.contains(lower);
   }
 

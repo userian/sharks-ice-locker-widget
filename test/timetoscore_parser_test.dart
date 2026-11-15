@@ -104,5 +104,28 @@ void main() {
       expect(myViews[1].myLockerRoom, 'W4');
       expect(myViews[1].opponentTeam, 'Puck Norris');
     });
+
+    test('parses all league teams from display-stats.php HTML', () {
+      const statsHtml = '''
+      <table>
+        <tr><th colspan="100">Adult Division 8 West</th></tr>
+        <tr><th colspan="100"><a href="display-league-stats?stat_class=1&league=1">Division Player Stats</a></th></tr>
+        <tr><th>Team</th><th>GP</th><th>W</th><th>L</th><th>T</th><th>OTL</th><th>PTS</th></tr>
+        <tr>
+          <td><a href='display-schedule?team=3885&season=52&league=1&stat_class=1'>Scarebears </a></td>
+          <td>5</td><td>5</td><td>0</td><td>0</td><td>0</td><td>10</td>
+        </tr>
+        <tr>
+          <td><a href='display-schedule?team=4122&season=52&league=1&stat_class=1'>Irish Car Bombs 4 </a></td>
+          <td>5</td><td>4</td><td>1</td><td>0</td><td>0</td><td>8</td>
+        </tr>
+      </table>
+      ''';
+
+      final parser = TimeToScoreParser();
+      final teams = parser.parseTeamsFromStatsHtml(statsHtml);
+      expect(teams, containsAll(['Scarebears', 'Irish Car Bombs 4']));
+      expect(teams, isNot(contains('Division Player Stats')));
+    });
   });
 }

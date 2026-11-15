@@ -41,7 +41,7 @@ class SharksIceLockerApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Sharks Ice Locker Room Widget',
+      title: 'Which Locker Room?',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(

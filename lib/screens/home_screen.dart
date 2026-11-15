@@ -70,7 +70,7 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: const Color(0xFF006D77),
         foregroundColor: Colors.white,
         title: const Text(
-          'Sharks Ice Locker Rooms',
+          'Which Locker Room?',
           style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
         ),
         actions: [

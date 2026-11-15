@@ -4,7 +4,7 @@
 
     <application
         android:name="${applicationName}"
-        android:label="Sharks Ice Locker Widget"
+        android:label="Which Locker Room?"
         android:icon="@mipmap/ic_launcher">
 
         <activity

@@ -58,32 +58,58 @@ struct LockerRoomProvider: TimelineProvider {
     }
 }
 
+private var widgetGradientBackground: some View {
+    LinearGradient(
+        gradient: Gradient(colors: [
+            Color(red: 0.0, green: 0.18, blue: 0.21),
+            Color(red: 0.0, green: 0.43, blue: 0.47)
+        ]),
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
+}
+
+extension View {
+    @ViewBuilder
+    func applyWidgetBackground() -> some View {
+        if #available(iOSApplicationExtension 17.0, *) {
+            self.containerBackground(for: .widget) {
+                widgetGradientBackground
+            }
+        } else {
+            ZStack {
+                widgetGradientBackground
+                self
+            }
+        }
+    }
+}
+
 struct LockerRoomWidgetEntryView: View {
     var entry: LockerRoomProvider.Entry
     @Environment(\.widgetFamily) var family
 
     var body: some View {
-        ZStack {
-            LinearGradient(
-                gradient: Gradient(colors: [
-                    Color(red: 0.0, green: 0.18, blue: 0.21),
-                    Color(red: 0.0, green: 0.43, blue: 0.47)
-                ]),
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-
+        Group {
             if entry.games.isEmpty {
-                Text("No Games Today")
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundColor(.white)
-                    .padding(14)
+                VStack(spacing: 6) {
+                    Text("LR —")
+                        .font(.system(size: 13, weight: .black))
+                        .foregroundColor(Color(red: 1.0, green: 0.72, blue: 0.01))
+                    Text("No Games Today")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundColor(.white)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding(14)
             } else if family == .systemSmall {
                 smallGameView(game: entry.games[0])
             } else {
                 mediumGamesView(games: entry.games)
             }
         }
+        .applyWidgetBackground()
     }
 
     /// Little jersey icon + "White" or "Dark" badge
@@ -137,6 +163,7 @@ struct LockerRoomWidgetEntryView: View {
                 .foregroundColor(.white)
                 .lineLimit(1)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .padding(12)
     }
 
@@ -177,7 +204,18 @@ struct LockerRoomWidgetEntryView: View {
                 }
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .padding(14)
+    }
+}
+
+extension WidgetConfiguration {
+    func disableContentMarginsIfAvailable() -> some WidgetConfiguration {
+        if #available(iOSApplicationExtension 17.0, *) {
+            return self.contentMarginsDisabled()
+        } else {
+            return self
+        }
     }
 }
 
@@ -189,8 +227,9 @@ struct LockerRoomWidget: Widget {
         StaticConfiguration(kind: kind, provider: LockerRoomProvider()) { entry in
             LockerRoomWidgetEntryView(entry: entry)
         }
-        .configurationDisplayName("Sharks Ice Locker Room")
+        .configurationDisplayName("Which Locker Room?")
         .description("Shows your game time, team name, locker room, and jersey color.")
         .supportedFamilies([.systemSmall, .systemMedium])
+        .disableContentMarginsIfAvailable()
     }
 }

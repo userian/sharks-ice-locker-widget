@@ -9,6 +9,10 @@ enum SharksIceFacility {
     lrAssignmentsUrl:
         'https://stats.sharksice.timetoscore.com/display-lr-assignments.php',
     statsUrl: 'https://stats.sharksice.timetoscore.com/display-stats.php?league=1',
+    statsUrls: [
+      'https://stats.sharksice.timetoscore.com/display-stats.php?league=1',
+      'https://stats.sharksice.timetoscore.com/display-stats.php?league=27',
+    ],
     knownRinkKeywords: [
       'san jose',
       'north',
@@ -32,6 +36,10 @@ enum SharksIceFacility {
     lrAssignmentsUrl:
         'https://stats.sharksice.timetoscore.com/display-lr-assignments.php',
     statsUrl: 'https://stats.sharksice.timetoscore.com/display-stats.php?league=21',
+    statsUrls: [
+      'https://stats.sharksice.timetoscore.com/display-stats.php?league=21',
+      'https://stats.sharksice.timetoscore.com/display-stats.php?league=1',
+    ],
     knownRinkKeywords: [
       'fremont',
     ],
@@ -44,6 +52,9 @@ enum SharksIceFacility {
         'https://stats.oaklandice.timetoscore.com/display-lr-assignments.php',
     statsUrl:
         'https://stats.oaklandice.timetoscore.com/display-stats.php?league=1',
+    statsUrls: [
+      'https://stats.oaklandice.timetoscore.com/display-stats.php?league=1',
+    ],
     knownRinkKeywords: [
       'oakland',
       'nhl',
@@ -57,6 +68,7 @@ enum SharksIceFacility {
     required this.shortName,
     required this.lrAssignmentsUrl,
     required this.statsUrl,
+    required this.statsUrls,
     required this.knownRinkKeywords,
   });
 
@@ -65,6 +77,7 @@ enum SharksIceFacility {
   final String shortName;
   final String lrAssignmentsUrl;
   final String statsUrl;
+  final List<String> statsUrls;
   final List<String> knownRinkKeywords;
 
   static SharksIceFacility fromId(String id) {
