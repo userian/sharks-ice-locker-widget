@@ -90,6 +90,7 @@ jobs:
           cp -r /tmp/backup/test/* test/
           rm -f test/widget_test.dart
           cp -r /tmp/backup/ios/* ios/
+          sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*;/IPHONEOS_DEPLOYMENT_TARGET = 16.0;/g' ios/Runner.xcodeproj/project.pbxproj
 
       - name: Install dependencies
         run: flutter pub get

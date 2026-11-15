@@ -14,8 +14,18 @@ A cross-platform Flutter app and home screen widget (`home_widget` + `workmanage
 
 1. Generate any missing platform scaffolding files if starting from a fresh checkout:
    ```bash
+   mkdir -p /tmp/sharks_backup
+   cp -r lib test ios android pubspec.yaml /tmp/sharks_backup/
    flutter create . --org com.makeshiftlabs --project-name sharks_ice_locker_widget
+   cp /tmp/sharks_backup/pubspec.yaml pubspec.yaml
+   cp -r /tmp/sharks_backup/lib/* lib/
+   cp -r /tmp/sharks_backup/test/* test/
+   cp -r /tmp/sharks_backup/ios/* ios/
+   cp -r /tmp/sharks_backup/android/app/src/main/* android/app/src/main/
+   sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*;/IPHONEOS_DEPLOYMENT_TARGET = 16.0;/g' ios/Runner.xcodeproj/project.pbxproj
    flutter pub get
+   flutter build ios --config-only
+   open ios/Runner.xcworkspace
    ```
 2. **iOS Setup (Xcode)**:
    - Open `ios/Runner.xcworkspace` in Xcode.
