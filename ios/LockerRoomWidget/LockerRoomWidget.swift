@@ -104,33 +104,36 @@ struct LockerRoomWidgetEntryView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .padding(14)
             } else if family == .systemSmall {
-                smallGameView(game: entry.games[0])
+                smallGamesView(games: entry.games)
+            } else if family == .systemMedium {
+                listGamesView(games: Array(entry.games.prefix(3)), compact: entry.games.count > 2)
             } else {
-                mediumGamesView(games: entry.games)
+                listGamesView(games: Array(entry.games.prefix(6)), compact: false)
             }
         }
         .applyWidgetBackground()
     }
 
     /// Little jersey icon + "White" or "Dark" badge
-    private func jerseyBadge(isWhite: Bool) -> some View {
+    private func jerseyBadge(isWhite: Bool, compact: Bool = false) -> some View {
         HStack(spacing: 4) {
             Image(systemName: "tshirt.fill")
-                .font(.system(size: 11, weight: .bold))
+                .font(.system(size: compact ? 9 : 11, weight: .bold))
                 .foregroundColor(isWhite ? Color(red: 0.06, green: 0.09, blue: 0.16) : .white)
             Text(isWhite ? "White" : "Dark")
-                .font(.system(size: 11, weight: .heavy))
+                .font(.system(size: compact ? 10 : 11, weight: .heavy))
                 .foregroundColor(isWhite ? Color(red: 0.06, green: 0.09, blue: 0.16) : .white)
         }
-        .padding(.horizontal, 7)
-        .padding(.vertical, 4)
+        .padding(.horizontal, compact ? 5 : 7)
+        .padding(.vertical, compact ? 2 : 4)
         .background(isWhite ? Color.white : Color(red: 0.12, green: 0.16, blue: 0.23))
         .cornerRadius(7)
     }
 
-    private func smallGameView(game: WidgetGameItem) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .center, spacing: 8) {
+    private func smallGamesView(games: [WidgetGameItem]) -> some View {
+        let game = games[0]
+        return VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .center, spacing: 6) {
                 // 1. Locker Room (e.g. W4, O2, B1)
                 VStack(spacing: 0) {
                     Text("LR")
@@ -142,14 +145,14 @@ struct LockerRoomWidgetEntryView: View {
                         .lineLimit(1)
                         .foregroundColor(Color(red: 0.0, green: 0.18, blue: 0.21))
                 }
-                .frame(width: 50, height: 44)
+                .frame(width: 48, height: 42)
                 .background(Color(red: 1.0, green: 0.72, blue: 0.01))
                 .cornerRadius(10)
 
                 Spacer()
 
                 // 2. Jersey with icon
-                jerseyBadge(isWhite: game.isHome)
+                jerseyBadge(isWhite: game.isHome, compact: true)
             }
 
             // 3. Time
@@ -162,37 +165,43 @@ struct LockerRoomWidgetEntryView: View {
                 .font(.system(size: 14, weight: .bold))
                 .foregroundColor(.white)
                 .lineLimit(1)
+
+            if games.count > 1 {
+                Text("+\(games.count - 1) more game\(games.count > 2 ? "s" : "")")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundColor(.white.opacity(0.75))
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .padding(12)
     }
 
-    private func mediumGamesView(games: [WidgetGameItem]) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            ForEach(Array(games.prefix(2)), id: \.self) { game in
-                HStack(spacing: 12) {
+    private func listGamesView(games: [WidgetGameItem], compact: Bool) -> some View {
+        VStack(alignment: .leading, spacing: compact ? 6 : 8) {
+            ForEach(games, id: \.self) { game in
+                HStack(spacing: 10) {
                     // 1. Locker Room (e.g. W4, O2, B1)
                     VStack(spacing: 0) {
                         Text("LR")
-                            .font(.system(size: 9, weight: .black))
+                            .font(.system(size: compact ? 8 : 9, weight: .black))
                             .foregroundColor(Color(red: 0.0, green: 0.18, blue: 0.21))
                         Text(game.myLockerRoom)
-                            .font(.system(size: 18, weight: .black))
+                            .font(.system(size: compact ? 15 : 18, weight: .black))
                             .minimumScaleFactor(0.7)
                             .lineLimit(1)
                             .foregroundColor(Color(red: 0.0, green: 0.18, blue: 0.21))
                     }
-                    .frame(width: 52, height: 44)
+                    .frame(width: compact ? 44 : 52, height: compact ? 34 : 44)
                     .background(Color(red: 1.0, green: 0.72, blue: 0.01))
-                    .cornerRadius(10)
+                    .cornerRadius(9)
 
                     // 2. Time + 3. Team Name
-                    VStack(alignment: .leading, spacing: 2) {
+                    VStack(alignment: .leading, spacing: 1) {
                         Text(game.startTime)
-                            .font(.system(size: 12, weight: .heavy))
+                            .font(.system(size: compact ? 11 : 12, weight: .heavy))
                             .foregroundColor(Color(red: 1.0, green: 0.72, blue: 0.01))
                         Text(game.myTeam)
-                            .font(.system(size: 15, weight: .bold))
+                            .font(.system(size: compact ? 13 : 15, weight: .bold))
                             .foregroundColor(.white)
                             .lineLimit(1)
                     }
@@ -200,12 +209,12 @@ struct LockerRoomWidgetEntryView: View {
                     Spacer()
 
                     // 4. Jersey with icon
-                    jerseyBadge(isWhite: game.isHome)
+                    jerseyBadge(isWhite: game.isHome, compact: compact)
                 }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-        .padding(14)
+        .padding(compact ? 11 : 14)
     }
 }
 
@@ -229,7 +238,7 @@ struct LockerRoomWidget: Widget {
         }
         .configurationDisplayName("Which Locker Room?")
         .description("Shows your game time, team name, locker room, and jersey color.")
-        .supportedFamilies([.systemSmall, .systemMedium])
+        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
         .disableContentMarginsIfAvailable()
     }
 }
