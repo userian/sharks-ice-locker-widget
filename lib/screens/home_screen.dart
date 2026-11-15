@@ -91,37 +91,33 @@ class _HomeScreenState extends State<HomeScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            _buildWidgetPreviewCard(),
-            const SizedBox(height: 20),
-            Text(
-              'MY GAMES TODAY',
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.7,
-                    color: const Color(0xFF005662),
-                  ),
-            ),
-            const SizedBox(height: 8),
             if (_isLoading)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 32),
                 child: Center(child: CircularProgressIndicator()),
               )
-            else if (_selectedTeams.isEmpty)
-              _buildEmptyTeamsPrompt()
-            else if (_myGamesToday.isEmpty)
-              _buildNoGamesTodayCard()
-            else
-              ..._myGamesToday.map(_buildMyGameCard),
+            else ...[
+              if (_myGamesToday.isEmpty)
+                _buildWidgetPreviewCard(null)
+              else
+                ..._myGamesToday.map(
+                  (game) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _buildWidgetPreviewCard(game),
+                  ),
+                ),
+              if (_selectedTeams.isEmpty) ...[
+                const SizedBox(height: 16),
+                _buildEmptyTeamsPrompt(),
+              ],
+            ],
           ],
         ),
       ),
     );
   }
 
-  Widget _buildWidgetPreviewCard() {
-    final firstGame = _myGamesToday.isNotEmpty ? _myGamesToday.first : null;
-
+  Widget _buildWidgetPreviewCard(UserGameView? game) {
     return Container(
       decoration: BoxDecoration(
         gradient: const LinearGradient(
@@ -139,7 +135,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       padding: const EdgeInsets.all(16),
-      child: firstGame == null
+      child: game == null
           ? Row(
               children: [
                 Container(
@@ -194,7 +190,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                       Text(
-                        firstGame.myLockerRoom,
+                        game.myLockerRoom,
                         style: const TextStyle(
                           color: Color(0xFF002F35),
                           fontSize: 22,
@@ -211,7 +207,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        firstGame.startTime,
+                        game.startTime,
                         style: const TextStyle(
                           color: Color(0xFFFFB703),
                           fontWeight: FontWeight.w800,
@@ -220,7 +216,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        firstGame.myTeam,
+                        game.myTeam,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -234,83 +230,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(width: 10),
                 // 4. Jersey with little icon (White vs Dark)
-                _buildJerseyBadge(isWhiteJersey: firstGame.isHome),
+                _buildJerseyBadge(isWhiteJersey: game.isHome),
               ],
             ),
-    );
-  }
-
-  Widget _buildMyGameCard(UserGameView game) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Row(
-          children: [
-            // 1. Locker Room
-            Container(
-              width: 60,
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              decoration: BoxDecoration(
-                color: const Color(0xFF006D77),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                children: [
-                  const Text(
-                    'LR',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Text(
-                    game.myLockerRoom,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 14),
-            // 2. Time + 3. Team Name
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    game.startTime,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF006D77),
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    game.myTeam,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 10),
-            // 4. Jersey with little icon (White vs Dark)
-            _buildJerseyBadge(isWhiteJersey: game.isHome),
-          ],
-        ),
-      ),
     );
   }
 
@@ -361,19 +283,6 @@ class _HomeScreenState extends State<HomeScreen> {
               label: const Text('Select Teams in Settings'),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNoGamesTodayCard() {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      child: const Padding(
-        padding: EdgeInsets.all(16),
-        child: Text(
-          'No games today for your selected teams.',
-          style: TextStyle(fontSize: 14, color: Colors.black87),
         ),
       ),
     );
