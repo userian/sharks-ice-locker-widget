@@ -12,38 +12,6 @@ permissions:
   actions: read
 
 jobs:
-  publish-release-now:
-    name: Publish v1.0.0 Release Assets
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Download built APK & IPA and publish v1.0.0 Release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          mkdir -p /tmp/release-assets
-          if gh run download 43369827705 -R "${{ github.repository }}" --dir /tmp/release-assets; then
-            cp /tmp/release-assets/sharks-ice-locker-widget-apk/app-release.apk /tmp/release-assets/sharks-ice-locker-widget.apk
-            cp /tmp/release-assets/sharks-ice-locker-widget-ios-ipa/sharks-ice-locker-widget.ipa /tmp/release-assets/sharks-ice-locker-widget.ipa
-            if ! gh release view v1.0.0 -R "${{ github.repository }}" >/dev/null 2>&1; then
-              gh release create v1.0.0 \
-                /tmp/release-assets/sharks-ice-locker-widget.apk \
-                /tmp/release-assets/sharks-ice-locker-widget.ipa \
-                -R "${{ github.repository }}" \
-                --title "v1.0.0 — Sharks Ice Locker Room Widget (Android APK & iOS IPA)" \
-                --notes "### Direct Mobile Downloads
-          - **Android (1-Tap APK Install):** [sharks-ice-locker-widget.apk](https://github.com/${{ github.repository }}/releases/download/v1.0.0/sharks-ice-locker-widget.apk)
-          - **iOS (Unsigned IPA for Sideloadly / AltStore):** [sharks-ice-locker-widget.ipa](https://github.com/${{ github.repository }}/releases/download/v1.0.0/sharks-ice-locker-widget.ipa)"
-            else
-              gh release upload v1.0.0 \
-                /tmp/release-assets/sharks-ice-locker-widget.apk \
-                /tmp/release-assets/sharks-ice-locker-widget.ipa \
-                -R "${{ github.repository }}" --clobber
-            fi
-          fi
-
   build-android:
     name: Build Android Release APK
     runs-on: ubuntu-latest
@@ -67,7 +35,7 @@ jobs:
         run: |
           mkdir -p /tmp/backup
           cp -r lib test android pubspec.yaml /tmp/backup/
-          flutter create . --org com.sharksice --project-name sharks_ice_locker_widget
+          flutter create . --org com.makeshiftlabs --project-name sharks_ice_locker_widget
           cp /tmp/backup/pubspec.yaml pubspec.yaml
           cp -r /tmp/backup/lib/* lib/
           cp -r /tmp/backup/test/* test/
@@ -116,7 +84,7 @@ jobs:
         run: |
           mkdir -p /tmp/backup
           cp -r lib test ios pubspec.yaml /tmp/backup/
-          flutter create . --org com.sharksice --project-name sharks_ice_locker_widget
+          flutter create . --org com.makeshiftlabs --project-name sharks_ice_locker_widget
           cp /tmp/backup/pubspec.yaml pubspec.yaml
           cp -r /tmp/backup/lib/* lib/
           cp -r /tmp/backup/test/* test/

@@ -6,8 +6,8 @@ import '../models/locker_assignment.dart';
 import 'preferences_service.dart';
 import 'timetoscore_parser.dart';
 
-const String kBackgroundRefreshTask = 'com.sharksice.lockerwidget.refreshTask';
-const String kAppGroupId = 'group.com.sharksice.lockerwidget';
+const String kBackgroundRefreshTask = 'com.makeshiftlabs.sharks_ice_locker_widget.refreshTask';
+const String kAppGroupId = 'group.com.makeshiftlabs.sharks_ice_locker_widget';
 const String kIOSWidgetName = 'LockerRoomWidget';
 const String kAndroidWidgetName = 'LockerRoomWidgetProvider';
 
@@ -140,7 +140,7 @@ class WidgetSyncService {
         name: kAndroidWidgetName,
         iOSName: kIOSWidgetName,
         qualifiedAndroidName:
-            'com.sharksice.sharks_ice_locker_widget.$kAndroidWidgetName',
+            'com.makeshiftlabs.sharks_ice_locker_widget.$kAndroidWidgetName',
       );
     } catch (_) {
       // Safe no-op on non-device test runs

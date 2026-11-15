@@ -1,7 +1,7 @@
 import WidgetKit
 import SwiftUI
 
-private let appGroupId = "group.com.sharksice.lockerwidget"
+private let appGroupId = "group.com.makeshiftlabs.sharks_ice_locker_widget"
 
 struct WidgetGameItem: Codable, Hashable {
     let myTeam: String

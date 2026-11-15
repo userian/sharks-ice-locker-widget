@@ -1,4 +1,4 @@
-package com.sharksice.sharks_ice_locker_widget
+package com.makeshiftlabs.sharks_ice_locker_widget
 
 import android.appwidget.AppWidgetManager
 import android.content.Context
