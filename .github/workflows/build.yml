@@ -80,26 +80,25 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Generate missing platform scaffolding & restore custom files
+      - name: Configure Flutter & CocoaPods (matching Xcode Cloud ci_post_clone.sh)
         run: |
           flutter config --no-enable-swift-package-manager || true
-          mkdir -p /tmp/backup
-          cp -r lib test ios assets pubspec.yaml /tmp/backup/
-          flutter create . --org com.makeshiftlabs --project-name sharks_ice_locker_widget
-          cp /tmp/backup/pubspec.yaml pubspec.yaml
-          cp -r /tmp/backup/lib/* lib/
-          cp -r /tmp/backup/test/* test/
-          cp -r /tmp/backup/assets/* assets/
-          rm -f test/widget_test.dart
-          cp -r /tmp/backup/ios/* ios/
-          sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*;/IPHONEOS_DEPLOYMENT_TARGET = 16.0;/g' ios/Runner.xcodeproj/project.pbxproj
-
-      - name: Install dependencies & CocoaPods
-        run: |
           flutter pub get
+          flutter build ios --config-only --release --no-codesign --build-number=1
           cd ios
           pod install
           cd ..
+
+      - name: Verify Xcode Archive (Xcode Cloud simulation)
+        run: |
+          xcodebuild archive \
+            -workspace ios/Runner.xcworkspace \
+            -scheme Runner \
+            -destination generic/platform=iOS \
+            -archivePath /tmp/build.xcarchive \
+            CODE_SIGN_IDENTITY=- \
+            AD_HOC_CODE_SIGNING_ALLOWED=YES \
+            COMPILER_INDEX_STORE_ENABLE=NO
 
       - name: Build iOS Release (No Codesign)
         run: flutter build ios --release --no-codesign
