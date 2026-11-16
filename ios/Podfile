@@ -34,11 +34,11 @@ def configure_which_locker_room_widget_target!
     plist_content = File.read(runner_info_plist)
     plist_content.gsub!(
       /<key>CFBundleDisplayName<\/key>\s*<string>[^<]*<\/string>/m,
-      "<key>CFBundleDisplayName</key>\n\t<string>Which Locker Room?</string>"
+      "<key>CFBundleDisplayName</key>\n\t<string>Which Room?</string>"
     )
     plist_content.gsub!(
       /<key>CFBundleName<\/key>\s*<string>[^<]*<\/string>/m,
-      "<key>CFBundleName</key>\n\t<string>Which Locker Room?</string>"
+      "<key>CFBundleName</key>\n\t<string>Which Room?</string>"
     )
     File.write(runner_info_plist, plist_content)
   end

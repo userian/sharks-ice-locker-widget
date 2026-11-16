@@ -236,7 +236,7 @@ struct LockerRoomWidget: Widget {
         StaticConfiguration(kind: kind, provider: LockerRoomProvider()) { entry in
             LockerRoomWidgetEntryView(entry: entry)
         }
-        .configurationDisplayName("Which Locker Room?")
+        .configurationDisplayName("Which Room?")
         .description("Shows your game time, team name, locker room, and jersey color.")
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
         .disableContentMarginsIfAvailable()
