@@ -29,9 +29,18 @@ class LockerRoomWidgetProvider : HomeWidgetProvider() {
                 val gameTime = widgetData.getString("game_time_badge", "") ?: ""
                 val jerseyBadge = widgetData.getString("jersey_badge", "") ?: ""
                 val isHomeGame = widgetData.getBoolean("is_home_game", true)
+                val myGamesCount = widgetData.getInt("my_games_count", 0)
 
                 setTextViewText(R.id.tv_locker_number, primaryLr)
                 setTextViewText(R.id.tv_headline, headline)
+
+                if (myGamesCount > 1) {
+                    val extraCount = myGamesCount - 1
+                    setTextViewText(R.id.tv_more_games, "+$extraCount more • Tap to view more")
+                    setViewVisibility(R.id.tv_more_games, View.VISIBLE)
+                } else {
+                    setViewVisibility(R.id.tv_more_games, View.GONE)
+                }
 
                 if (gameTime.isNotEmpty()) {
                     setTextViewText(R.id.tv_game_time, gameTime)

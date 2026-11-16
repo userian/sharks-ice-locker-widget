@@ -106,9 +106,17 @@ struct LockerRoomWidgetEntryView: View {
             } else if family == .systemSmall {
                 smallGamesView(games: entry.games)
             } else if family == .systemMedium {
-                listGamesView(games: Array(entry.games.prefix(3)), compact: entry.games.count > 2)
+                listGamesView(
+                    games: Array(entry.games.prefix(3)),
+                    totalCount: entry.games.count,
+                    compact: entry.games.count > 2
+                )
             } else {
-                listGamesView(games: Array(entry.games.prefix(6)), compact: false)
+                listGamesView(
+                    games: Array(entry.games.prefix(6)),
+                    totalCount: entry.games.count,
+                    compact: entry.games.count > 5
+                )
             }
         }
         .applyWidgetBackground()
@@ -149,6 +157,7 @@ struct LockerRoomWidgetEntryView: View {
 
     private func smallGamesView(games: [WidgetGameItem]) -> some View {
         let game = games[0]
+        let extraCount = games.count - 1
         return VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .center, spacing: 6) {
                 // 1. Locker Room (e.g. W4, O2, B1)
@@ -183,18 +192,24 @@ struct LockerRoomWidgetEntryView: View {
                 .foregroundColor(.white)
                 .lineLimit(1)
 
-            if games.count > 1 {
-                Text("+\(games.count - 1) more game\(games.count > 2 ? "s" : "")")
+            if extraCount > 0 {
+                Text("+\(extraCount) more • Tap to view more")
                     .font(.system(size: 10, weight: .semibold))
-                    .foregroundColor(.white.opacity(0.75))
+                    .foregroundColor(Color(red: 1.0, green: 0.72, blue: 0.01))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .padding(12)
     }
 
-    private func listGamesView(games: [WidgetGameItem], compact: Bool) -> some View {
-        VStack(alignment: .leading, spacing: compact ? 6 : 8) {
+    private func listGamesView(games: [WidgetGameItem], totalCount: Int, compact: Bool) -> some View {
+        let extraCount = max(0, totalCount - games.count)
+        let rowHeight: CGFloat = extraCount > 0 ? 30 : (compact ? 34 : 44)
+        let rowSpacing: CGFloat = extraCount > 0 ? 5 : (compact ? 6 : 8)
+
+        return VStack(alignment: .leading, spacing: rowSpacing) {
             ForEach(games, id: \.self) { game in
                 HStack(spacing: 10) {
                     // 1. Locker Room (e.g. W4, O2, B1)
@@ -203,22 +218,22 @@ struct LockerRoomWidgetEntryView: View {
                             .font(.system(size: compact ? 8 : 9, weight: .black))
                             .foregroundColor(Color(red: 0.0, green: 0.18, blue: 0.21))
                         Text(game.myLockerRoom)
-                            .font(.system(size: compact ? 15 : 18, weight: .black))
+                            .font(.system(size: extraCount > 0 ? 14 : (compact ? 15 : 18), weight: .black))
                             .minimumScaleFactor(0.7)
                             .lineLimit(1)
                             .foregroundColor(Color(red: 0.0, green: 0.18, blue: 0.21))
                     }
-                    .frame(width: compact ? 44 : 52, height: compact ? 34 : 44)
+                    .frame(width: compact ? 44 : 52, height: rowHeight)
                     .background(Color(red: 1.0, green: 0.72, blue: 0.01))
-                    .cornerRadius(9)
+                    .cornerRadius(8)
 
                     // 2. Time + 3. Team Name
                     VStack(alignment: .leading, spacing: 1) {
                         Text(game.startTime)
-                            .font(.system(size: compact ? 11 : 12, weight: .heavy))
+                            .font(.system(size: compact ? 10.5 : 12, weight: .heavy))
                             .foregroundColor(Color(red: 1.0, green: 0.72, blue: 0.01))
                         Text(game.myTeam)
-                            .font(.system(size: compact ? 13 : 15, weight: .bold))
+                            .font(.system(size: compact ? 12.5 : 15, weight: .bold))
                             .foregroundColor(.white)
                             .lineLimit(1)
                     }
@@ -229,9 +244,21 @@ struct LockerRoomWidgetEntryView: View {
                     jerseyBadge(isWhite: game.isHome, compact: compact)
                 }
             }
+
+            if extraCount > 0 {
+                HStack {
+                    Spacer()
+                    Text("+\(extraCount) more game\(extraCount > 1 ? "s" : "") • Tap to view more")
+                        .font(.system(size: 10.5, weight: .bold))
+                        .foregroundColor(Color(red: 1.0, green: 0.72, blue: 0.01))
+                    Spacer()
+                }
+                .padding(.top, 1)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-        .padding(compact ? 11 : 14)
+        .padding(.horizontal, compact ? 11 : 14)
+        .padding(.vertical, extraCount > 0 ? 9 : (compact ? 11 : 14))
     }
 }
 
