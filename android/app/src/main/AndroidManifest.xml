@@ -4,7 +4,7 @@
 
     <application
         android:name="${applicationName}"
-        android:label="Which Room?"
+        android:label="Locker Room?"
         android:icon="@mipmap/ic_launcher">
 
         <activity

@@ -24,7 +24,7 @@ end
 
 require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelper'), flutter_root)
 
-# Automatically configures the "Which Locker Room?" app display name and embeds the
+# Automatically configures the "Locker Room?" app display name and embeds the
 # LockerRoomWidgetExtension WidgetKit target into Runner.xcodeproj during `pod install`.
 def configure_which_locker_room_widget_target!
   require 'xcodeproj'
@@ -34,11 +34,11 @@ def configure_which_locker_room_widget_target!
     plist_content = File.read(runner_info_plist)
     plist_content.gsub!(
       /<key>CFBundleDisplayName<\/key>\s*<string>[^<]*<\/string>/m,
-      "<key>CFBundleDisplayName</key>\n\t<string>Which Room?</string>"
+      "<key>CFBundleDisplayName</key>\n\t<string>Locker Room?</string>"
     )
     plist_content.gsub!(
       /<key>CFBundleName<\/key>\s*<string>[^<]*<\/string>/m,
-      "<key>CFBundleName</key>\n\t<string>Which Room?</string>"
+      "<key>CFBundleName</key>\n\t<string>Locker Room?</string>"
     )
     File.write(runner_info_plist, plist_content)
   end

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/app_logo.png" alt="Which Locker Room? Logo" width="140" />
+  <img src="assets/app_logo.png" alt="Locker Room? Logo" width="140" />
 </p>
 
 # Sharks Ice Locker Room Widget (Flutter — iOS & Android)

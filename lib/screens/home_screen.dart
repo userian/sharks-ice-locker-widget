@@ -83,7 +83,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(width: 10),
             const Text(
-              'Which Locker Room?',
+              'Locker Room?',
               style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
             ),
           ],
