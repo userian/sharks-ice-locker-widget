@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/app_logo.png" alt="Which Locker Room? Logo" width="140" />
+</p>
+
 # Sharks Ice Locker Room Widget (Flutter — iOS & Android)
 
 A cross-platform Flutter app and home screen widget (`home_widget` + `workmanager`) that scrapes today's games and locker room assignments from [TimeToScore (`display-lr-assignments.php`)](https://stats.sharksice.timetoscore.com/display-lr-assignments.php) and displays your selected teams' games and locker room numbers right on your iPhone or Android home screen.

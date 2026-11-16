@@ -253,6 +253,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildJerseyBadge({required bool isWhiteJersey}) {
     return Container(
+      width: 80,
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: isWhiteJersey ? Colors.white : const Color(0xFF1E293B),
@@ -263,6 +264,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           JerseyIcon(isWhiteJersey: isWhiteJersey, size: 16),
           const SizedBox(width: 6),

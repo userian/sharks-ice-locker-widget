@@ -44,9 +44,10 @@ class LockerRoomWidgetProvider : HomeWidgetProvider() {
                     setTextViewText(R.id.tv_jersey_badge, jerseyBadge)
                     val bgColor = if (isHomeGame) 0xFFFFFFFF.toInt() else 0xFF1E293B.toInt()
                     val fgColor = if (isHomeGame) 0xFF0F172A.toInt() else 0xFFFFFFFF.toInt()
+                    val jerseyDrawable = if (isHomeGame) R.drawable.ic_jersey else R.drawable.ic_jersey_dark
                     setInt(R.id.jersey_badge_container, "setBackgroundColor", bgColor)
                     setTextColor(R.id.tv_jersey_badge, fgColor)
-                    setInt(R.id.iv_jersey_icon, "setColorFilter", fgColor)
+                    setImageViewResource(R.id.iv_jersey_icon, jerseyDrawable)
                     setViewVisibility(R.id.jersey_badge_container, View.VISIBLE)
                 } else {
                     setViewVisibility(R.id.jersey_badge_container, View.GONE)

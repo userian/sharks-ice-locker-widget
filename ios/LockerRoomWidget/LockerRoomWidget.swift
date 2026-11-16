@@ -116,18 +116,35 @@ struct LockerRoomWidgetEntryView: View {
 
     /// Little jersey icon + "White" or "Dark" badge
     private func jerseyBadge(isWhite: Bool, compact: Bool = false) -> some View {
-        HStack(spacing: 4) {
-            Image(systemName: "tshirt.fill")
-                .font(.system(size: compact ? 9 : 11, weight: .bold))
-                .foregroundColor(isWhite ? Color(red: 0.06, green: 0.09, blue: 0.16) : .white)
+        let darkColor = Color(red: 0.06, green: 0.09, blue: 0.16)
+        let iconSize: CGFloat = compact ? 12 : 14
+        return HStack(spacing: compact ? 4 : 5) {
+            ZStack {
+                JerseyShape()
+                    .fill(isWhite ? Color.white : darkColor)
+                JerseyShape()
+                    .stroke(
+                        isWhite ? darkColor : Color.white,
+                        style: StrokeStyle(lineWidth: 1.4, lineJoin: .round)
+                    )
+            }
+            .frame(width: iconSize, height: iconSize)
+
             Text(isWhite ? "White" : "Dark")
                 .font(.system(size: compact ? 10 : 11, weight: .heavy))
-                .foregroundColor(isWhite ? Color(red: 0.06, green: 0.09, blue: 0.16) : .white)
+                .foregroundColor(isWhite ? darkColor : .white)
         }
-        .padding(.horizontal, compact ? 5 : 7)
+        .frame(width: compact ? 60 : 68)
         .padding(.vertical, compact ? 2 : 4)
         .background(isWhite ? Color.white : Color(red: 0.12, green: 0.16, blue: 0.23))
         .cornerRadius(7)
+        .overlay(
+            RoundedRectangle(cornerRadius: 7)
+                .stroke(
+                    isWhite ? Color(red: 0.80, green: 0.84, blue: 0.88) : Color.white.opacity(0.24),
+                    lineWidth: 1
+                )
+        )
     }
 
     private func smallGamesView(games: [WidgetGameItem]) -> some View {
@@ -242,3 +259,28 @@ struct LockerRoomWidget: Widget {
         .disableContentMarginsIfAvailable()
     }
 }
+
+struct JerseyShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        let w = rect.width
+        let h = rect.height
+        var path = Path()
+        path.move(to: CGPoint(x: w * 0.30, y: h * 0.12))
+        path.addLine(to: CGPoint(x: w * 0.05, y: h * 0.32))
+        path.addLine(to: CGPoint(x: w * 0.16, y: h * 0.50))
+        path.addLine(to: CGPoint(x: w * 0.26, y: h * 0.40))
+        path.addLine(to: CGPoint(x: w * 0.26, y: h * 0.90))
+        path.addLine(to: CGPoint(x: w * 0.74, y: h * 0.90))
+        path.addLine(to: CGPoint(x: w * 0.74, y: h * 0.40))
+        path.addLine(to: CGPoint(x: w * 0.84, y: h * 0.50))
+        path.addLine(to: CGPoint(x: w * 0.95, y: h * 0.32))
+        path.addLine(to: CGPoint(x: w * 0.70, y: h * 0.12))
+        path.addQuadCurve(
+            to: CGPoint(x: w * 0.30, y: h * 0.12),
+            control: CGPoint(x: w * 0.50, y: h * 0.26)
+        )
+        path.closeSubpath()
+        return path
+    }
+}
+
