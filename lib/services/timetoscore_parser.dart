@@ -134,7 +134,7 @@ class TimeToScoreParser {
   }
 
   /// Fetches a sorted list of team names across the enabled [facilities] by combining
-  /// teams from today's `display-lr-assignments.php` and the active season's
+  /// teams from today's `display-lr-assignments.php` and the active + recent seasons'
   /// `display-stats.php` standings pages.
   Future<List<String>> fetchAvailableTeams({
     required Set<SharksIceFacility> facilities,
@@ -148,33 +148,90 @@ class TimeToScoreParser {
       if (game.homeTeam.isNotEmpty) teamNames.add(game.homeTeam);
     }
 
-    // 2. Scrape all division team links from display-stats.php for each selected facility
-    final statsUrls = <String>{
+    // 2. Scrape all division team links from display-stats.php for each facility,
+    // including the top recent seasons from the <select> dropdown (covers playoffs/season transitions).
+    final baseStatsUrls = <String>{
       for (final facility in facilities) ...facility.statsUrls,
     };
-    for (final url in statsUrls) {
-      try {
-        final response = await _client
-            .get(
-              Uri.parse(url),
-              headers: const {
-                'Accept': 'text/html,application/xhtml+xml',
-                'User-Agent': 'WhichLockerRoom/1.0',
-              },
-            )
-            .timeout(const Duration(seconds: 15));
 
-        if (response.statusCode == 200 && response.body.isNotEmpty) {
-          teamNames.addAll(parseTeamsFromStatsHtml(response.body));
+    final secondarySeasonUrls = <String>{};
+
+    final initialResponses = await Future.wait(
+      baseStatsUrls.map((url) => _fetchHtmlSafe(url)),
+    );
+
+    for (var i = 0; i < baseStatsUrls.length; i++) {
+      final baseUrl = baseStatsUrls.elementAt(i);
+      final body = initialResponses[i];
+      if (body == null || body.isEmpty) continue;
+
+      teamNames.addAll(parseTeamsFromStatsHtml(body));
+      secondarySeasonUrls.addAll(
+        extractRecentSeasonStatsUrls(body, baseStatsUrl: baseUrl, maxSeasons: 3),
+      );
+    }
+
+    secondarySeasonUrls.removeAll(baseStatsUrls);
+    if (secondarySeasonUrls.isNotEmpty) {
+      final seasonBodies = await Future.wait(
+        secondarySeasonUrls.map((url) => _fetchHtmlSafe(url)),
+      );
+      for (final body in seasonBodies) {
+        if (body != null && body.isNotEmpty) {
+          teamNames.addAll(parseTeamsFromStatsHtml(body));
         }
-      } catch (_) {
-        // Ignore network errors and rely on cached/today teams or manual entry
       }
     }
 
     final sorted = teamNames.toList()
       ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
     return sorted;
+  }
+
+  Future<String?> _fetchHtmlSafe(String url) async {
+    try {
+      final response = await _client
+          .get(
+            Uri.parse(url),
+            headers: const {
+              'Accept': 'text/html,application/xhtml+xml',
+              'User-Agent': 'WhichLockerRoom/1.0',
+            },
+          )
+          .timeout(const Duration(seconds: 12));
+      if (response.statusCode == 200 && response.body.isNotEmpty) {
+        return response.body;
+      }
+    } catch (_) {
+      // Ignore individual endpoint timeouts
+    }
+    return null;
+  }
+
+  /// Extracts URLs for the most recent [maxSeasons] seasons from the `<select>`
+  /// dropdown on a TimeToScore `display-stats.php` page.
+  List<String> extractRecentSeasonStatsUrls(
+    String htmlContent, {
+    required String baseStatsUrl,
+    int maxSeasons = 3,
+  }) {
+    final document = html_parser.parse(htmlContent);
+    final baseUri = Uri.parse(baseStatsUrl);
+    final urls = <String>[];
+
+    final options = document.querySelectorAll('select option');
+    for (final option in options) {
+      final val = (option.attributes['value'] ?? '').trim();
+      if (val.isEmpty || int.tryParse(val) == null || val == '0') continue;
+
+      final updatedQuery = Map<String, String>.from(baseUri.queryParameters);
+      updatedQuery['season'] = val;
+      final seasonUri = baseUri.replace(queryParameters: updatedQuery);
+      urls.add(seasonUri.toString());
+      if (urls.length >= maxSeasons) break;
+    }
+
+    return urls;
   }
 
   /// Parses all league team names from `display-stats.php` standings pages.

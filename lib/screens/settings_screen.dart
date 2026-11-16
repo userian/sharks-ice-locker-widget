@@ -27,73 +27,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
     SharksIceFacility.fremont,
   };
   List<String> _selectedTeams = [];
-  List<String> _availableTeams = [];
-  String _searchQuery = '';
-  bool _isLoadingTeams = false;
-  bool _isSearchFocused = false;
-  final TextEditingController _searchController = TextEditingController();
-  final FocusNode _searchFocusNode = FocusNode();
 
   @override
   void initState() {
     super.initState();
-    _searchFocusNode.addListener(_handleSearchFocusChange);
-    _loadInitialSettings();
+    _loadSettings();
   }
 
-  void _handleSearchFocusChange() {
-    if (!mounted) return;
-    setState(() {
-      _isSearchFocused = _searchFocusNode.hasFocus;
-    });
-  }
-
-  @override
-  void dispose() {
-    _searchFocusNode.removeListener(_handleSearchFocusChange);
-    _searchFocusNode.dispose();
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _loadInitialSettings() async {
+  Future<void> _loadSettings() async {
     final facilities = await widget.preferencesService.getEnabledFacilities();
     final selected = await widget.preferencesService.getSelectedTeams();
-    final cachedTeams = await widget.preferencesService.getCachedKnownTeams();
-
     if (!mounted) return;
     setState(() {
       _enabledFacilities = facilities;
       _selectedTeams = selected;
-      _availableTeams = {...cachedTeams, ...selected}.toList()
-        ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
     });
-
-    await _refreshTeamsFromTimeToScore();
-  }
-
-  Future<void> _refreshTeamsFromTimeToScore() async {
-    if (_enabledFacilities.isEmpty) return;
-    setState(() => _isLoadingTeams = true);
-    try {
-      // Fetch all teams across all leagues at the enabled facilities (plus all Sharks Ice leagues)
-      final liveTeams = await widget.parser.fetchAvailableTeams(
-        facilities: SharksIceFacility.values.toSet(),
-      );
-      if (liveTeams.isNotEmpty) {
-        await widget.preferencesService.mergeKnownTeams(liveTeams);
-      }
-      final merged = await widget.preferencesService.getCachedKnownTeams();
-      if (!mounted) return;
-      setState(() {
-        _availableTeams = {...merged, ..._selectedTeams}.toList()
-          ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
-      });
-    } finally {
-      if (mounted) {
-        setState(() => _isLoadingTeams = false);
-      }
-    }
   }
 
   Future<void> _toggleFacility(SharksIceFacility facility, bool enabled) async {
@@ -115,6 +63,257 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() => _enabledFacilities = updated);
     await widget.preferencesService.setEnabledFacilities(updated);
     await widget.widgetSyncService.refreshAndSyncWidget();
+  }
+
+  Future<void> _removeTeam(String teamName) async {
+    final updated = _selectedTeams
+        .where((t) => t.toLowerCase() != teamName.toLowerCase())
+        .toList();
+    setState(() => _selectedTeams = updated);
+    await widget.preferencesService.setSelectedTeams(updated);
+    await widget.widgetSyncService.refreshAndSyncWidget();
+  }
+
+  Future<void> _clearAllTeams() async {
+    setState(() => _selectedTeams = []);
+    await widget.preferencesService.setSelectedTeams([]);
+    await widget.widgetSyncService.refreshAndSyncWidget();
+  }
+
+  Future<void> _openAddTeamsPage() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => AddTeamsScreen(
+          preferencesService: widget.preferencesService,
+          parser: widget.parser,
+          widgetSyncService: widget.widgetSyncService,
+        ),
+      ),
+    );
+    await _loadSettings();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF3F6F8),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF006D77),
+        foregroundColor: Colors.white,
+        title: const Text(
+          'Settings',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          // 1. Facilities Section
+          Text(
+            'FACILITIES TO INCLUDE',
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.8,
+                  color: const Color(0xFF005662),
+                ),
+          ),
+          const SizedBox(height: 8),
+          Card(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                children: SharksIceFacility.values.map((facility) {
+                  final selected = _enabledFacilities.contains(facility);
+                  return FilterChip(
+                    label: Text(facility.name),
+                    selected: selected,
+                    selectedColor: const Color(0xFF00788A).withOpacity(0.18),
+                    checkmarkColor: const Color(0xFF00788A),
+                    onSelected: (val) => _toggleFacility(facility, val),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // 2. Button sitting directly above My Teams to open the Add Teams page
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF006D77),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              onPressed: _openAddTeamsPage,
+              icon: const Icon(Icons.add),
+              label: const Text(
+                'Add Teams',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // 3. My Teams Section
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'MY TEAMS (${_selectedTeams.length})',
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.8,
+                      color: const Color(0xFF005662),
+                    ),
+              ),
+              if (_selectedTeams.isNotEmpty)
+                TextButton(
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  onPressed: _clearAllTeams,
+                  child: const Text('Clear All'),
+                ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          if (_selectedTeams.isEmpty)
+            Card(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text(
+                  'No teams added yet. Tap "Add Teams" above to search and select your league teams.',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.black54,
+                  ),
+                ),
+              ),
+            )
+          else
+            Card(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Column(
+                children: [
+                  for (var i = 0; i < _selectedTeams.length; i++) ...[
+                    if (i > 0) const Divider(height: 1),
+                    ListTile(
+                      leading: const Icon(
+                        Icons.sports_hockey,
+                        color: Color(0xFF006D77),
+                      ),
+                      title: Text(
+                        _selectedTeams[i],
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                        ),
+                      ),
+                      trailing: IconButton(
+                        tooltip: 'Remove team',
+                        icon: const Icon(
+                          Icons.close,
+                          color: Colors.black54,
+                        ),
+                        onPressed: () => _removeTeam(_selectedTeams[i]),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Dedicated page for searching and adding teams, with the search input pinned
+/// at the very top so matching league teams are always visible above the keyboard.
+class AddTeamsScreen extends StatefulWidget {
+  const AddTeamsScreen({
+    super.key,
+    required this.preferencesService,
+    required this.parser,
+    required this.widgetSyncService,
+  });
+
+  final PreferencesService preferencesService;
+  final TimeToScoreParser parser;
+  final WidgetSyncService widgetSyncService;
+
+  @override
+  State<AddTeamsScreen> createState() => _AddTeamsScreenState();
+}
+
+class _AddTeamsScreenState extends State<AddTeamsScreen> {
+  List<String> _selectedTeams = [];
+  List<String> _availableTeams = [];
+  String _searchQuery = '';
+  bool _isLoadingTeams = false;
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadInitialTeams();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadInitialTeams() async {
+    final selected = await widget.preferencesService.getSelectedTeams();
+    final cachedTeams = await widget.preferencesService.getCachedKnownTeams();
+
+    if (!mounted) return;
+    setState(() {
+      _selectedTeams = selected;
+      _availableTeams = {...cachedTeams, ...selected}.toList()
+        ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+    });
+
+    await _refreshTeamsFromTimeToScore();
+  }
+
+  Future<void> _refreshTeamsFromTimeToScore() async {
+    setState(() => _isLoadingTeams = true);
+    try {
+      final liveTeams = await widget.parser.fetchAvailableTeams(
+        facilities: SharksIceFacility.values.toSet(),
+      );
+      if (liveTeams.isNotEmpty) {
+        await widget.preferencesService.mergeKnownTeams(liveTeams);
+      }
+      final merged = await widget.preferencesService.getCachedKnownTeams();
+      if (!mounted) return;
+      setState(() {
+        _availableTeams = {...merged, ..._selectedTeams}.toList()
+          ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingTeams = false);
+      }
+    }
   }
 
   Future<void> _toggleTeam(String teamName) async {
@@ -150,12 +349,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return _selectedTeams.any((t) => t.toLowerCase() == lower);
   }
 
+  /// Normalizes words (including singular/plural `skulls` -> `skull` and `&` -> `and`)
+  /// so searching "skulls and crosschecks" matches "Skull and CrossChecks".
+  static List<String> _tokenizeNormalized(String input) {
+    return input
+        .toLowerCase()
+        .replaceAll('&', ' and ')
+        .replaceAll(RegExp(r"['’`.,\-_/]"), ' ')
+        .split(RegExp(r'\s+'))
+        .where((w) => w.isNotEmpty)
+        .map((w) {
+      if (w.length >= 4 && w.endsWith('s') && !w.endsWith('ss')) {
+        return w.substring(0, w.length - 1);
+      }
+      return w;
+    }).toList();
+  }
+
   List<String> _getFilteredTeams() {
     final q = _searchQuery.trim().toLowerCase();
     if (q.isEmpty) return _availableTeams;
 
+    final queryTokens = _tokenizeNormalized(q);
+
     final startsWithMatches = <String>[];
     final containsMatches = <String>[];
+    final tokenMatches = <String>[];
 
     for (final team in _availableTeams) {
       final lower = team.toLowerCase();
@@ -163,10 +382,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
         startsWithMatches.add(team);
       } else if (lower.contains(q)) {
         containsMatches.add(team);
+      } else if (queryTokens.isNotEmpty) {
+        final teamTokens = _tokenizeNormalized(team);
+        final allTokensMatch = queryTokens.every(
+          (qt) => teamTokens.any((tt) => tt.contains(qt) || qt.contains(tt)),
+        );
+        if (allTokensMatch) {
+          tokenMatches.add(team);
+        }
       }
     }
 
-    return [...startsWithMatches, ...containsMatches];
+    return [...startsWithMatches, ...containsMatches, ...tokenMatches];
   }
 
   Widget _buildHighlightedTeamTitle(String team, bool isSelected) {
@@ -220,25 +447,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
           (t) => t.toLowerCase() == trimmedQuery.toLowerCase(),
         );
 
-    // Collapse top sections when keyboard/search is active so matching teams
-    // are immediately visible above the keyboard as you type.
-    final isSearching = _isSearchFocused || trimmedQuery.isNotEmpty;
-
     return Scaffold(
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
-        title: const Text('Widget & Team Settings'),
+        backgroundColor: const Color(0xFF006D77),
+        foregroundColor: Colors.white,
+        title: const Text(
+          'Add Teams',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
         actions: [
-          if (isSearching)
-            TextButton(
-              onPressed: () {
-                _searchFocusNode.unfocus();
-              },
-              child: const Text(
-                'Done',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
           IconButton(
             tooltip: 'Sync all league teams from TimeToScore',
             onPressed: _isLoadingTeams ? null : _refreshTeamsFromTimeToScore,
@@ -246,128 +464,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ? const SizedBox(
                     width: 18,
                     height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
                   )
                 : const Icon(Icons.sync),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text(
+              'Done',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+              ),
+            ),
           ),
         ],
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 1. Search Bar at the very top when searching (or below compact header when idle)
-          if (!isSearching) ...[
-            // Facilities Section
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'FACILITIES TO INCLUDE',
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.8,
-                          color: const Color(0xFF00788A),
-                        ),
-                  ),
-                  const SizedBox(height: 6),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 6,
-                    children: SharksIceFacility.values.map((facility) {
-                      final selected = _enabledFacilities.contains(facility);
-                      return FilterChip(
-                        label: Text(facility.name),
-                        selected: selected,
-                        selectedColor:
-                            const Color(0xFF00788A).withOpacity(0.18),
-                        checkmarkColor: const Color(0xFF00788A),
-                        onSelected: (val) => _toggleFacility(facility, val),
-                      );
-                    }).toList(),
-                  ),
-                ],
-              ),
-            ),
-            const Divider(height: 16),
-
-            // Selected Teams Chips
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'MY TEAMS (${_selectedTeams.length})',
-                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.8,
-                              color: const Color(0xFF00788A),
-                            ),
-                      ),
-                      if (_selectedTeams.isNotEmpty)
-                        TextButton(
-                          style: TextButton.styleFrom(
-                            visualDensity: VisualDensity.compact,
-                          ),
-                          onPressed: () async {
-                            setState(() => _selectedTeams = []);
-                            await widget.preferencesService.setSelectedTeams([]);
-                            await widget.widgetSyncService.refreshAndSyncWidget();
-                          },
-                          child: const Text('Clear All'),
-                        ),
-                    ],
-                  ),
-                  if (_selectedTeams.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 4),
-                      child: Text(
-                        'No teams selected yet. Search or check your team(s) below.',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontStyle: FontStyle.italic,
-                          color: Colors.black54,
-                        ),
-                      ),
-                    )
-                  else
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 6,
-                      children: _selectedTeams.map((team) {
-                        return InputChip(
-                          label: Text(
-                            team,
-                            style: const TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                          backgroundColor:
-                              const Color(0xFF00788A).withOpacity(0.14),
-                          deleteIconColor: const Color(0xFF005662),
-                          onDeleted: () => _toggleTeam(team),
-                        );
-                      }).toList(),
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 10),
-          ],
-
-          // Search Box (always pinned near top so results below it are never hidden by keyboard)
+          // Search Bar pinned at the very top of the page
           Padding(
-            padding: EdgeInsets.fromLTRB(16, isSearching ? 10 : 0, 16, 4),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
             child: TextField(
               controller: _searchController,
-              focusNode: _searchFocusNode,
+              autofocus: true,
               textInputAction: TextInputAction.search,
               decoration: InputDecoration(
-                hintText:
-                    'Search all ${_availableTeams.length} league teams...',
+                hintText: 'Search league teams...',
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
@@ -391,7 +519,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
 
-          // Live count / custom team add bar right below search
+          // Live count bar right below search
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             child: Row(
@@ -410,14 +538,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 if (_isLoadingTeams)
                   const Text(
-                    'Updating from TimeToScore...',
+                    'Syncing TimeToScore...',
                     style: TextStyle(fontSize: 12, color: Color(0xFF00788A)),
                   ),
               ],
             ),
           ),
+          const Divider(height: 1),
 
-          // Scrollable Team Checklist (immediately visible above keyboard)
+          // Matching teams list directly under search (above the keyboard)
           Expanded(
             child: ListView.separated(
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,

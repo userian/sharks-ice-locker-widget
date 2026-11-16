@@ -114,7 +114,8 @@ class GameLockerAssignment {
   final String homeLockerRoom;
   final String? gameId;
 
-  /// Checks if either homeTeam or awayTeam matches any of [selectedTeams] (case-insensitive).
+  /// Checks if either homeTeam or awayTeam matches any of [selectedTeams] (case-insensitive,
+  /// tolerant of singular/plural and `&` vs `and` variations).
   bool involvesAnyTeam(Iterable<String> selectedTeams) {
     final normalizedSelected =
         selectedTeams.map(_normalizeTeamName).where((t) => t.isNotEmpty).toSet();
@@ -174,7 +175,20 @@ class GameLockerAssignment {
   }
 
   static String _normalizeTeamName(String name) {
-    return name.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+    final words = name
+        .trim()
+        .toLowerCase()
+        .replaceAll('&', ' and ')
+        .replaceAll(RegExp(r"['’`.,\-_/]"), ' ')
+        .split(RegExp(r'\s+'))
+        .where((w) => w.isNotEmpty)
+        .map((w) {
+      if (w.length >= 5 && w.endsWith('s') && !w.endsWith('ss')) {
+        return w.substring(0, w.length - 1);
+      }
+      return w;
+    });
+    return words.join(' ');
   }
 
   Map<String, dynamic> toJson() => {
