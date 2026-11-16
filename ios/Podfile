@@ -40,6 +40,12 @@ def configure_which_locker_room_widget_target!
       /<key>CFBundleName<\/key>\s*<string>[^<]*<\/string>/m,
       "<key>CFBundleName</key>\n\t<string>Locker Room?</string>"
     )
+    unless plist_content.include?('ITSAppUsesNonExemptEncryption')
+      plist_content.sub!(
+        /<\/dict>\s*<\/plist>/m,
+        "\t<key>ITSAppUsesNonExemptEncryption</key>\n\t<false/>\n</dict>\n</plist>"
+      )
+    end
     File.write(runner_info_plist, plist_content)
   end
 
@@ -61,6 +67,19 @@ def configure_which_locker_room_widget_target!
 
   project_path = File.expand_path('Runner.xcodeproj', __dir__)
   return unless File.exist?(project_path)
+
+  # Read FLUTTER_BUILD_NAME and FLUTTER_BUILD_NUMBER from Generated.xcconfig or CI_BUILD_NUMBER
+  flutter_build_name = '1.0.0'
+  flutter_build_number = ENV['CI_BUILD_NUMBER'] && !ENV['CI_BUILD_NUMBER'].strip.empty? ? ENV['CI_BUILD_NUMBER'].strip : '1'
+  generated_xcconfig = File.expand_path('Flutter/Generated.xcconfig', __dir__)
+  if File.exist?(generated_xcconfig)
+    File.foreach(generated_xcconfig) do |line|
+      flutter_build_name = $1.strip if line =~ /^FLUTTER_BUILD_NAME=(.*)$/
+      if (!ENV['CI_BUILD_NUMBER'] || ENV['CI_BUILD_NUMBER'].strip.empty?) && line =~ /^FLUTTER_BUILD_NUMBER=(.*)$/
+        flutter_build_number = $1.strip
+      end
+    end
+  end
 
   project = Xcodeproj::Project.open(project_path)
   runner_target = project.targets.find { |t| t.name == 'Runner' }
@@ -84,7 +103,7 @@ def configure_which_locker_room_widget_target!
     end
   end
 
-  runner_dev_team = nil
+  runner_dev_team = '66S2DP2SHJ'
   runner_bundle_id = 'com.makeshiftlabs.sharksIceLockerWidget'
 
   project.build_configurations.each do |config|
@@ -94,17 +113,24 @@ def configure_which_locker_room_widget_target!
   runner_target.build_configurations.each do |config|
     s = config.build_settings
     if s['DEVELOPMENT_TEAM'] && !s['DEVELOPMENT_TEAM'].to_s.strip.empty?
-      runner_dev_team ||= s['DEVELOPMENT_TEAM']
+      runner_dev_team = s['DEVELOPMENT_TEAM']
+    else
+      s['DEVELOPMENT_TEAM'] = runner_dev_team
     end
     if s['PRODUCT_BUNDLE_IDENTIFIER'] && !s['PRODUCT_BUNDLE_IDENTIFIER'].to_s.strip.empty?
       runner_bundle_id = s['PRODUCT_BUNDLE_IDENTIFIER']
     end
+    s['CODE_SIGN_STYLE'] = 'Automatic'
     s['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
     s['CODE_SIGN_ENTITLEMENTS'] = 'Runner/Runner.entitlements'
     s['ASSETCATALOG_COMPILER_APPICON_NAME'] = 'AppIcon'
     s.delete('PODS_ROOT')
     s.delete('PODS_PODFILE_DIR_PATH')
     s['ENABLE_USER_SCRIPT_SANDBOXING'] = 'NO'
+    s['FLUTTER_BUILD_NAME'] = flutter_build_name
+    s['FLUTTER_BUILD_NUMBER'] = flutter_build_number
+    s['CURRENT_PROJECT_VERSION'] = flutter_build_number
+    s['MARKETING_VERSION'] = flutter_build_name
   end
 
   widget_target_name = 'LockerRoomWidgetExtension'
@@ -152,17 +178,17 @@ def configure_which_locker_room_widget_target!
     s['INFOPLIST_FILE'] = 'LockerRoomWidget/Info.plist'
     s['CODE_SIGN_ENTITLEMENTS'] = 'LockerRoomWidget/LockerRoomWidget.entitlements'
     s['CODE_SIGN_STYLE'] = 'Automatic'
-    if runner_dev_team && !runner_dev_team.to_s.strip.empty?
-      s['DEVELOPMENT_TEAM'] = runner_dev_team
-    end
+    s['DEVELOPMENT_TEAM'] = runner_dev_team
     s['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
     s['SWIFT_VERSION'] = '5.0'
     s['TARGETED_DEVICE_FAMILY'] = '1,2'
     s['LD_RUNPATH_SEARCH_PATHS'] = '$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks'
     s['SKIP_INSTALL'] = 'YES'
     s['GENERATE_INFOPLIST_FILE'] = 'NO'
-    s['CURRENT_PROJECT_VERSION'] = '1'
-    s['MARKETING_VERSION'] = '1.0.0'
+    s['FLUTTER_BUILD_NAME'] = flutter_build_name
+    s['FLUTTER_BUILD_NUMBER'] = flutter_build_number
+    s['CURRENT_PROJECT_VERSION'] = flutter_build_number
+    s['MARKETING_VERSION'] = flutter_build_name
     s['CLANG_ENABLE_MODULES'] = 'YES'
     s['ENABLE_USER_SCRIPT_SANDBOXING'] = 'NO'
     s['SWIFT_OPTIMIZATION_LEVEL'] = (config.name == 'Debug' ? '-Onone' : '-O')
