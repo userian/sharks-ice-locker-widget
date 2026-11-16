@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Locker Room? — Sharks Ice &amp; Oakland Ice Home Screen Widget</title>
+  <meta name="description" content="Instant locker room assignments, game times, and jersey colors for SIAHL &amp; OIAHL hockey players on your iPhone and Android home screen." />
+  <style>
+    :root {
+      --teal-dark: #002f35;
+      --teal-main: #006d77;
+      --teal-light: #e6f3f5;
+      --gold: #ffb703;
+      --slate-900: #0f172a;
+      --slate-700: #334155;
+      --slate-500: #64748b;
+      --bg: #f3f6f8;
+      --card: #ffffff;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--slate-900);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a {
+      color: var(--teal-main);
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    /* Header / Nav */
+    header {
+      background: linear-gradient(135deg, var(--teal-dark) 0%, var(--teal-main) 100%);
+      color: #ffffff;
+      padding: 20px 24px 64px;
+    }
+
+    .container {
+      max-width: 920px;
+      margin: 0 auto;
+    }
+
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 48px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 800;
+      font-size: 1.2rem;
+      color: #ffffff;
+      text-decoration: none;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 22px;
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+
+    .nav-links a {
+      color: rgba(255, 255, 255, 0.88);
+    }
+
+    .nav-links a:hover {
+      color: var(--gold);
+      text-decoration: none;
+    }
+
+    /* Hero */
+    .hero {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 40px;
+      align-items: center;
+    }
+
+    .hero-badge {
+      display: inline-block;
+      background: rgba(255, 183, 3, 0.18);
+      color: var(--gold);
+      border: 1px solid rgba(255, 183, 3, 0.4);
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 999px;
+      margin-bottom: 16px;
+    }
+
+    .hero h1 {
+      font-size: clamp(2.1rem, 4vw, 3rem);
+      line-height: 1.12;
+      font-weight: 900;
+      margin-bottom: 16px;
+      letter-spacing: -0.02em;
+    }
+
+    .hero p {
+      font-size: 1.1rem;
+      color: rgba(255, 255, 255, 0.88);
+      margin-bottom: 24px;
+    }
+
+    .facility-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .facility-pill {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+      font-size: 0.85rem;
+      font-weight: 700;
+      padding: 6px 14px;
+      border-radius: 10px;
+    }
+
+    /* Live Widget Mockup */
+    .widget-mockup {
+      background: linear-gradient(135deg, #00282e 0%, #005f68 100%);
+      border-radius: 26px;
+      padding: 18px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .widget-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .lr-box {
+      width: 56px;
+      height: 48px;
+      background: var(--gold);
+      color: var(--teal-dark);
+      border-radius: 11px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .lr-box .lr-label {
+      font-size: 0.6rem;
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: 0.04em;
+    }
+
+    .lr-box .lr-num {
+      font-size: 1.25rem;
+      font-weight: 900;
+      line-height: 1.1;
+    }
+
+    .game-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .game-time {
+      color: var(--gold);
+      font-size: 0.78rem;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+
+    .game-team {
+      color: #ffffff;
+      font-size: 0.98rem;
+      font-weight: 800;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .jersey-pill {
+      width: 78px;
+      padding: 5px 8px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    .jersey-pill.white {
+      background: #ffffff;
+      color: var(--slate-900);
+      border: 1px solid #cbd5e1;
+    }
+
+    .jersey-pill.dark {
+      background: #1e293b;
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.24);
+    }
+
+    .widget-caption {
+      text-align: center;
+      font-size: 0.78rem;
+      color: rgba(255, 255, 255, 0.7);
+      margin-top: 10px;
+      font-weight: 600;
+    }
+
+    /* Main Content Sections */
+    main {
+      padding: 48px 24px 72px;
+    }
+
+    section {
+      margin-bottom: 48px;
+    }
+
+    h2 {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--teal-dark);
+      margin-bottom: 18px;
+      letter-spacing: -0.01em;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+      border: 1px solid #e2e8f0;
+    }
+
+    .card h3 {
+      font-size: 1.08rem;
+      font-weight: 800;
+      margin-bottom: 8px;
+      color: var(--teal-dark);
+    }
+
+    .card p {
+      color: var(--slate-700);
+      font-size: 0.95rem;
+    }
+
+    .info-card p + p {
+      margin-top: 12px;
+    }
+
+    .info-card ul {
+      margin: 12px 0 0 20px;
+      color: var(--slate-700);
+      font-size: 0.95rem;
+    }
+
+    .info-card li + li {
+      margin-top: 6px;
+    }
+
+    footer {
+      text-align: center;
+      padding: 28px 24px;
+      border-top: 1px solid #e2e8f0;
+      color: var(--slate-500);
+      font-size: 0.88rem;
+    }
+
+    @media (max-width: 720px) {
+      .hero {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="container">
+      <nav>
+        <a href="#" class="brand">
+          <!-- Self-contained SVG Jersey LR Icon -->
+          <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" style="border-radius: 8px; flex-shrink: 0;">
+            <rect width="64" height="64" rx="14" fill="#003840"/>
+            <path d="M21 12L7 23L13 33L18 28V52H46V28L51 33L57 23L43 12C39.5 16.5 35.8 18.5 32 18.5C28.2 18.5 24.5 16.5 21 12Z" fill="#FFFFFF" stroke="#002F35" stroke-width="2.5" stroke-linejoin="round"/>
+            <rect x="21" y="25" width="22" height="16" rx="3" fill="#FFB703" stroke="#002F35" stroke-width="1.8"/>
+            <text x="32" y="37" text-anchor="middle" fill="#FFFFFF" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-weight="900" font-size="12">LR</text>
+          </svg>
+          <span>Locker Room?</span>
+        </a>
+        <div class="nav-links">
+          <a href="#features">Features</a>
+          <a href="#support">Support</a>
+          <a href="#privacy">Privacy Policy</a>
+        </div>
+      </nav>
+
+      <div class="hero">
+        <div>
+          <span class="hero-badge">iOS &amp; Android Home Screen Widget</span>
+          <h1>Never squint at the lobby monitor again.</h1>
+          <p>
+            <strong>Locker Room?</strong> puts your today's adult league game times, assigned locker rooms, and home/away jersey colors right on your iPhone or Android home screen.
+          </p>
+          <div class="facility-pills">
+            <span class="facility-pill">🏒 Sharks Ice San Jose</span>
+            <span class="facility-pill">🏒 Sharks Ice Fremont</span>
+            <span class="facility-pill">🏒 Oakland Ice Center</span>
+          </div>
+        </div>
+
+        <div>
+          <div class="widget-mockup" aria-label="Home Screen Widget Preview">
+            <div class="widget-row">
+              <div class="lr-box">
+                <span class="lr-label">LR</span>
+                <span class="lr-num">W4</span>
+              </div>
+              <div class="game-info">
+                <div class="game-time">7:45 PM</div>
+                <div class="game-team">Choking Hazards</div>
+              </div>
+              <div class="jersey-pill white">
+                <svg width="14" height="14" viewBox="0 0 24 24">
+                  <path d="M7.2,3L1.5,7.6L4.2,11.8L6.5,9.6V21H17.5V9.6L19.8,11.8L22.5,7.6L16.8,3C15.5,4.8 13.8,5.8 12,5.8C10.2,5.8 8.5,4.8 7.2,3Z" fill="#FFFFFF" stroke="#0F172A" stroke-width="2.2" stroke-linejoin="round"/>
+                </svg>
+                <span>White</span>
+              </div>
+            </div>
+
+            <div class="widget-row">
+              <div class="lr-box">
+                <span class="lr-label">LR</span>
+                <span class="lr-num">B2</span>
+              </div>
+              <div class="game-info">
+                <div class="game-time">9:30 PM</div>
+                <div class="game-team">Skull and CrossChecks</div>
+              </div>
+              <div class="jersey-pill dark">
+                <svg width="14" height="14" viewBox="0 0 24 24">
+                  <path d="M7.2,3L1.5,7.6L4.2,11.8L6.5,9.6V21H17.5V9.6L19.8,11.8L22.5,7.6L16.8,3C15.5,4.8 13.8,5.8 12,5.8C10.2,5.8 8.5,4.8 7.2,3Z" fill="#0F172A" stroke="#FFFFFF" stroke-width="2.2" stroke-linejoin="round"/>
+                </svg>
+                <span>Dark</span>
+              </div>
+            </div>
+          </div>
+          <div class="widget-caption">Live iOS &amp; Android Widget Preview</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section id="features">
+      <h2>Built for SIAHL &amp; OIAHL Players</h2>
+      <div class="grid-3">
+        <div class="card">
+          <h3>Instant Locker Room Numbers</h3>
+          <p>Automatically syncs today's locker room assignments from TimeToScore for San Jose, Fremont, and Oakland rinks.</p>
+        </div>
+        <div class="card">
+          <h3>Multi-Team Support</h3>
+          <p>Play on multiple teams or subbing tonight? Select all of your teams and see every game on Small, Medium, or Large widgets.</p>
+        </div>
+        <div class="card">
+          <h3>White vs. Dark Jersey Badge</h3>
+          <p>See at a glance whether your team is Home (White jersey) or Away (Dark jersey) before you pack your bag.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="support">
+      <h2>Support &amp; FAQ</h2>
+      <div class="card info-card">
+        <p><strong>How do I add the widget to my iPhone Home Screen?</strong></p>
+        <ul>
+          <li>Open the <strong>Locker Room?</strong> app, tap the Gear icon (Settings), and add your team(s).</li>
+          <li>Long-press an empty area on your iPhone Home Screen until the icons jiggle, then tap <strong>Edit / +</strong> in the top-left corner.</li>
+          <li>Search for <strong>Locker Room?</strong>, choose Small, Medium, or Large, and tap <strong>Add Widget</strong>.</li>
+        </ul>
+        <p style="margin-top: 16px;">
+          Need help, found a bug, or want to request a rink? Open an issue on
+          <a href="https://github.com/userian/sharks-ice-locker-widget/issues" target="_blank" rel="noopener">GitHub</a>
+          or contact <a href="https://makeshiftlabs.com">Makeshift Labs</a>.
+        </p>
+      </div>
+    </section>
+
+    <section id="privacy">
+      <h2>Privacy Policy</h2>
+      <div class="card info-card">
+        <p><strong>Effective Date:</strong> November 2026</p>
+        <p>
+          <strong>Locker Room?</strong> does not collect, store, track, or share any personal information, analytics, location data, or user identifiers.
+        </p>
+        <ul>
+          <li><strong>No Account Required:</strong> The app requires no sign-in or personal details.</li>
+          <li><strong>On-Device Preferences Only:</strong> Your selected hockey facilities and team names are stored solely on your device (in local app and widget storage) to display your games.</li>
+          <li><strong>Public Schedule Data:</strong> The app fetches publicly posted daily game schedules and locker room assignments directly from TimeToScore.</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">
+      &copy; 2026 <a href="https://makeshiftlabs.com">Makeshift Labs</a>. Not affiliated with Sharks Ice or the San Jose Sharks.
+    </div>
+  </footer>
+
+</body>
+</html>
