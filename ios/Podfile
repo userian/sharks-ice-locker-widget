@@ -43,12 +43,46 @@ def configure_which_locker_room_widget_target!
     File.write(runner_info_plist, plist_content)
   end
 
+  debug_xcconfig = File.expand_path('Flutter/Debug.xcconfig', __dir__)
+  if File.exist?(File.dirname(debug_xcconfig))
+    File.write(
+      debug_xcconfig,
+      "#include? \"Pods/Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig\"\n#include \"Generated.xcconfig\"\n"
+    )
+  end
+
+  release_xcconfig = File.expand_path('Flutter/Release.xcconfig', __dir__)
+  if File.exist?(File.dirname(release_xcconfig))
+    File.write(
+      release_xcconfig,
+      "#include? \"Pods/Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig\"\n#include? \"Pods/Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig\"\n#include \"Generated.xcconfig\"\n"
+    )
+  end
+
   project_path = File.expand_path('Runner.xcodeproj', __dir__)
   return unless File.exist?(project_path)
 
   project = Xcodeproj::Project.open(project_path)
   runner_target = project.targets.find { |t| t.name == 'Runner' }
   return unless runner_target
+
+  # Remove any leftover FlutterGeneratedPluginSwiftPackage references if project was created with SPM enabled
+  if runner_target.respond_to?(:package_product_dependencies)
+    runner_target.package_product_dependencies.reject! do |dep|
+      dep.respond_to?(:product_name) && dep.product_name == 'FlutterGeneratedPluginSwiftPackage'
+    end
+  end
+  runner_target.frameworks_build_phase.files.reject! do |build_file|
+    build_file.respond_to?(:product_ref) &&
+      build_file.product_ref &&
+      build_file.product_ref.respond_to?(:product_name) &&
+      build_file.product_ref.product_name == 'FlutterGeneratedPluginSwiftPackage'
+  end
+  if project.root_object.respond_to?(:package_references)
+    project.root_object.package_references.reject! do |pkg|
+      pkg.respond_to?(:relative_path) && pkg.relative_path.to_s.include?('FlutterGeneratedPluginSwiftPackage')
+    end
+  end
 
   runner_dev_team = nil
   runner_bundle_id = 'com.makeshiftlabs.sharksIceLockerWidget'
@@ -68,8 +102,8 @@ def configure_which_locker_room_widget_target!
     s['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
     s['CODE_SIGN_ENTITLEMENTS'] = 'Runner/Runner.entitlements'
     s['ASSETCATALOG_COMPILER_APPICON_NAME'] = 'AppIcon'
-    s['PODS_ROOT'] = '$(SRCROOT)/Pods'
-    s['PODS_PODFILE_DIR_PATH'] = '$(SRCROOT)'
+    s.delete('PODS_ROOT')
+    s.delete('PODS_PODFILE_DIR_PATH')
     s['ENABLE_USER_SCRIPT_SANDBOXING'] = 'NO'
   end
 
